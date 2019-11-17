@@ -5,6 +5,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateCustomizer;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
@@ -15,15 +16,31 @@ import org.springframework.web.client.RestTemplate;
 @Component
 public class BlockingRestTemplateCustomizer implements RestTemplateCustomizer {
 
+    private final int requestTimeout;
+    private final int socketTimeout;
+    private final int maxTotal;
+    private final int defaultMaxPerRoute;
+
+    public BlockingRestTemplateCustomizer(@Value("${sfg.client.requesttimeout}") int requestTimeout,
+                                          @Value("${sfg.client.sockettimeout}") int socketTimeout,
+                                          @Value("${sfg.client.maxtotal}") int maxTotal,
+                                          @Value("${sfg.client.defaultmaxperroute}") int defaultMaxPerRoute) {
+        this.requestTimeout = requestTimeout;
+        this.socketTimeout = socketTimeout;
+        this.maxTotal = maxTotal;
+        this.defaultMaxPerRoute = defaultMaxPerRoute;
+    }
+
+
     public ClientHttpRequestFactory clientHttpRequestFactory() {
         PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
-        connectionManager.setMaxTotal(100);
-        connectionManager.setDefaultMaxPerRoute(20);
+        connectionManager.setMaxTotal(maxTotal);
+        connectionManager.setDefaultMaxPerRoute(defaultMaxPerRoute);
 
         RequestConfig requestConfig = RequestConfig
                 .custom()
-                .setConnectionRequestTimeout(3000)
-                .setSocketTimeout(3000)
+                .setConnectionRequestTimeout(requestTimeout)
+                .setSocketTimeout(socketTimeout)
                 .build();
 
         CloseableHttpClient httpClient = HttpClients
